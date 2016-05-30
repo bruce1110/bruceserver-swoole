@@ -7,7 +7,7 @@ class User extends Swoole\Controller
     function login()
     {
         //使用crypt密码
-        Swoole\Auth::$password_hash = Swoole\Auth::HASH_CRYPT;
+        Swoole\Auth::$password_hash = 'sha1_single';
 
         $this->session->start();
         //已经登录了，跳转到
@@ -37,9 +37,8 @@ class User extends Swoole\Controller
 
     function home()
     {
-        $this->session->start();
-        var_dump($_SESSION);
-        Swoole\Auth::loginRequire();
+        //$this->tpl->assign('my_var','12344');
+        $this->tpl->display('user/home.html');
     }
 
     function logout()
