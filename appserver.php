@@ -5,14 +5,14 @@
  * Time: 14:39
  */
 define('DEBUG','on');
-defile('WEBPATH',__DIR__);
+define('WEBPATH',__DIR__);
 
-require __DIR__.'./vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
 Swoole\Loader::vendor_init();
 $app  = new Swoole\Protocol\AppServer(array());
 $app->loadSetting(__DIR__.'/app.ini');
-$app->setDocumentRoot(__DIR__.'/static');
+$app->setDocumentRoot(__DIR__);
 $app->setLogger(new Swoole\Log\EchoLog(true));
 $app->setAppPath(__DIR__.'/apps');
 
