@@ -3,8 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <script>
+	var ws = null;
+	var wsUri ="ws://192.168.0.208:9443";
+        function sendmessage(){
+	    if( ws == null )
+	    {
+           	 ws = new WebSocket(wsUri);
+	    }
+            var message = document.getElementById('message').value;
+            console.log(message);
+            console.log(ws);
+            ws.onopen = function(ev)
+            {
+                console.log("连接成功");
+                ws.send('token=123qwe');
+            };
+            ws.onerror = function(ev)
+            {
+                console.log("连接出错");
+            };
+            ws.onmessage = function(ev)
+            {
+                console.log(ev.data);
+            };
+            ws.onclose = function(ev)
+            {
+                console.log("关闭");
+            };
+        }
+    </script>
 </head>
 <body>
-<p>it is ok</p>
+<p>点击发送</p>
+<input type="text" id="message" value=""/>
+<button onclick="sendmessage();">发送</button>
 </body>
 </html>
