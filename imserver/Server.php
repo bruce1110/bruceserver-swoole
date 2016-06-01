@@ -105,8 +105,15 @@ class Server extends Swoole\Protocol\WebSocket
             "logintime"=>$msg['logintime']
         );
         //保存会话信息
-        $this->allUsers[$client_id]=$loginsuccess;
-        //返回登录成功信息
-        $this->sendJson($client_id,$loginsuccess);
+        if(!in_array($client_id,$this->allUsers))
+        {
+            $this->allUsers[$client_id] = $loginsuccess;
+            //返回登录成功信息
+            $this->sendJson($client_id, $loginsuccess);
+        }
+        else
+        {
+            $this->sendErrorMessage($client_id,"repeat login",102);
+        }
     }
 }
