@@ -30,6 +30,8 @@ class Server extends Swoole\Protocol\WebSocket
      * Auth认证消息{"cmd":"Auth","token":"xxx","type":1/2,"id":"111222","uname":"name"}
      * 直播员不需要login，直接进行auth认证；观众进行login之后将client_id保存到allUser；
      * Login消息{"cmd":"Login","type":2,"logintime":"timestamp"}
+     *包括观众评论消息和直播员发送的比赛实时消息
+     * sendMessage消息{"cmd":"sendMessage","type":1/2,"id":"xxxxx","uname":"name","msg":"xxxxx","sendtime":"timestamp"}
      * */
     function onMessage($client_id, $message)
     {
@@ -52,10 +54,49 @@ class Server extends Swoole\Protocol\WebSocket
     /*----------------sendMessage--------------*/
     /*
      * 发送信息
+     *直播员消息格式:
      * */
     function cmd_sendMessage($client_id,$msg)
     {
-
+        //类型判断:1->直播员消息 2->观众评论
+        if($msg['type'] ==1)
+        {
+            if(array_key_exists($client_id,$this->Directors))
+            {
+                $resmsg=array(
+                    "code"=>1,
+                    "cmd"=>"WatchMessage",
+                    "director"=>$msg['uname'],
+                    "sendtime"=>$msg['sendtime'],
+                    "type"=>1,
+                    "msg"=>$msg['msg']
+                );
+                $this->broadCast($client_id,$resmsg);
+            }
+            else
+            {
+                $this->sendErrorMessage($client_id,'no logined',103);
+            }
+        }
+        if($msg['type']==2)
+        {
+            if(array_key_exists($client_id,$this->loginUsers))
+            {
+                $resmsg=array(
+                    "code"=>1,
+                    "cmd"=>"CommetMessage",
+                    "name"=>$msg['uname'],
+                    "sendtime"=>$msg['sendtime'],
+                    "type"=>2,
+                    "msg"=>$msg['msg']
+                );
+                $this->broadCast($client_id,$resmsg);
+            }
+            else
+            {
+                $this->sendErrorMessage($client_id,'no logined',103);
+            }
+        }
     }
     /**
      * 发送错误信息
@@ -78,17 +119,36 @@ class Server extends Swoole\Protocol\WebSocket
     /*
      * 广播发送信息
      * */
-    function broadCast()
+    function broadCast($session_id,$msg)
     {
-
+        foreach($this->allUsers as $client_id=>$value)
+        {
+            if($client_id != $session_id)
+            {
+                $this->sendJson($client_id, $msg);
+            }
+        }
     }
     /*---------------------------------END sendMessage-----------------*/
     /*
      * 用户身份认证
+     * 暂时不需要---2016-06-01
      * */
     function cmd_Auth($client_id,$msg)
     {
-        return true;
+        //类型判断:1->直播员消息 2->观众评论
+        if($msg['type']==1)
+        {
+            $this->Directors[$client_id]=array(
+                "code"=>1
+            );
+        }
+        if($msg['type']==2)
+        {
+            $this->Directors[$client_id]=array(
+                "code"=>1
+            );
+        }
     }
     /*
      * 观众上线
@@ -105,7 +165,7 @@ class Server extends Swoole\Protocol\WebSocket
             "logintime"=>$msg['logintime']
         );
         //保存会话信息
-        if(!in_array($client_id,$this->allUsers))
+        if(!array_key_exists($client_id,$this->allUsers))
         {
             $this->allUsers[$client_id] = $loginsuccess;
             //返回登录成功信息
