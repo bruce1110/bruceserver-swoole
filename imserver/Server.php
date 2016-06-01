@@ -16,6 +16,7 @@ use Swoole;
  * */
 class Server extends Swoole\Protocol\WebSocket
 {
+    /*以后可以考虑将这些信息保存到redis中，以增加服务器的并发数*/
     protected $allUsers;   //保存所有的在线观众
     protected $loginUsers; //保存已经登录的观众
     protected $Directors; //保存登录的直播员信息
@@ -42,7 +43,7 @@ class Server extends Swoole\Protocol\WebSocket
         //判断消息是否合法，不合法消息将返回错误信息
         if(! in_array($msg['cmd'],$this->type)||empty($msg['cmd'])||! method_exists($this,'cmd_'.$msg['cmd']))
         {
-            $this->sendErrorMessage($client_id,'nukonwm message',101);
+            $this->sendErrorMessage($client_id,'unrecognized message',101);
             return;
         }
         //处理消息
@@ -99,7 +100,7 @@ class Server extends Swoole\Protocol\WebSocket
         }
         else
         {
-            $this->sendErrorMessage($client_id,'nuknown message type',104);
+            $this->sendErrorMessage($client_id,'unrecognized message type',104);
         }
     }
     /**
@@ -136,7 +137,7 @@ class Server extends Swoole\Protocol\WebSocket
     /*---------------------------------END sendMessage-----------------*/
     /*
      * 用户身份认证
-     * 暂时不需要---2016-06-01
+     * 暂时没有实现认证逻辑---2016-06-01
      * */
     function cmd_Auth($client_id,$msg)
     {
