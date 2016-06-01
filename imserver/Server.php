@@ -78,7 +78,7 @@ class Server extends Swoole\Protocol\WebSocket
                 $this->sendErrorMessage($client_id,'no logined',103);
             }
         }
-        if($msg['type']==2)
+        elseif($msg['type']==2)
         {
             if(array_key_exists($client_id,$this->loginUsers))
             {
@@ -96,6 +96,10 @@ class Server extends Swoole\Protocol\WebSocket
             {
                 $this->sendErrorMessage($client_id,'no logined',103);
             }
+        }
+        else
+        {
+            $this->sendErrorMessage($client_id,'nuknown message type',104);
         }
     }
     /**
@@ -139,15 +143,25 @@ class Server extends Swoole\Protocol\WebSocket
         //类型判断:1->直播员消息 2->观众评论
         if($msg['type']==1)
         {
-            $this->Directors[$client_id]=array(
-                "code"=>1
+            $resmsg=array(
+                "code"=>1,
+                "status"=>"success"
             );
+            $this->Directors[$client_id]=$resmsg;
+            $this->sendJson($client_id,$resmsg);
         }
-        if($msg['type']==2)
+        elseif($msg['type']==2)
         {
-            $this->Directors[$client_id]=array(
-                "code"=>1
+            $resmsg=array(
+                "code"=>1,
+                "status"=>"success"
             );
+            $this->loginUsers[$client_id]=$resmsg;
+            $this->sendJson($client_id,$resmsg);
+        }
+        else
+        {
+            $this->sendErrorMessage($client_id,'nuknown message type',104);
         }
     }
     /*
