@@ -20,7 +20,7 @@ class Server extends Swoole\Protocol\WebSocket
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage','Auth','Login');
+    protected $type = array('sendMessage','Auth','Login','GetNumbers');
 
     const MESSAGE_MAX_LEN = 1024; //单条消息不得超过1K
     /*
@@ -38,7 +38,7 @@ class Server extends Swoole\Protocol\WebSocket
      * sendMessage类型消息{"cmd":"sendMessage","type":1/2,"userid/directorid":"xxxxx","uname/directorname":"name","matchid":"1234","msg":"xxxxx","sendtime":"timestamp"}
      *
      * 获取单场比赛在线人数
-     * GetNumbers类型消息{"cmd":"GetNumbers","sendtime":"xxxxx"}
+     * GetNumbers类型消息{"cmd":"GetNumbers","sendtime":"xxxxx","matchid":"xxxxx"}
      * */
     function onMessage($client_id, $message)
     {
