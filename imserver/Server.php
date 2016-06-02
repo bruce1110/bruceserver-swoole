@@ -29,12 +29,17 @@ class Server extends Swoole\Protocol\WebSocket
      * 直播员进行Auth之后将client_id保存到Director；
      * 观众进行Auth之后将client_id 保存到loginUser；
      * Auth认证消息{"cmd":"Auth","token":"xxx","type":1/2,"userid/directorid":"1234","matchid":"1234","uname":"name","authtime":"xxxxx"}
+     *
      * 直播员不需要login，直接进行auth认证；观众进行login之后将client_id保存到allUser；
      * Login类型消息{"cmd":"Login","type":2,"matchid":"1234","logintime":"timestamp"}
+     *
      *包括观众评论消息和直播员发送的比赛实时消息;
      * 直播员发送的比赛消息需要保存，而评论消息不需要保存
      * sendMessage类型消息{"cmd":"sendMessage","type":1/2,"userid/directorid":"xxxxx","uname/directorname":"name","matchid":"1234","msg":"xxxxx","sendtime":"timestamp"}
-* */
+     *
+     * 获取单场比赛在线人数
+     * GetNumbers类型消息{"cmd":"GetNumbers","sendtime":"xxxxx"}
+     * */
     function onMessage($client_id, $message)
     {
         // TODO: Implement onMessage() method.
@@ -66,7 +71,7 @@ class Server extends Swoole\Protocol\WebSocket
         //类型判断:1->直播员消息 2->观众评论
         if($msg['type'] ==1)
         {
-            if(array_key_exists($client_id,$this->Directors)&&array_key_exists($msg['matchid'],$this->Directors[$client_id]))
+            if(array_key_exists($client_id,$this->Directors)&&$this->Directors[$client_id]['matchid'] == $msg['matchid'])
             {
                 $resmsg=array(
                     "code"=>1,
@@ -87,7 +92,7 @@ class Server extends Swoole\Protocol\WebSocket
         }
         elseif($msg['type']==2)
         {
-            if(array_key_exists($client_id,$this->loginUsers)&&array_key_exists($msg['matchid'],$this->loginUsers[$client_id]))
+            if(array_key_exists($client_id,$this->loginUsers)&&$this->loginUsers[$client_id]['matchid'] == $msg['matchid'])
             {
                 $resmsg=array(
                     "code"=>1,
@@ -124,19 +129,18 @@ class Server extends Swoole\Protocol\WebSocket
      * */
     function sendJson($client_id,$array)
     {
-        $msg = json_encode($array);
-        if ($this->send($client_id, $msg) === false) {
+        if ($this->send($client_id, json_encode($array)) === false) {
             $this->close($client_id);
         }
     }
     /*
-     * 广播发送信息
+     * 发送一场比赛的广播信息
      * */
     function broadCast($session_id,$msg)
     {
         foreach($this->allUsers as $client_id=>$value)
         {
-            if($client_id != $session_id)
+            if($client_id != $session_id&&$this->allUsers[$client_id]['matchid'] == $msg['matchid'])
             {
                 $this->sendJson($client_id, $msg);
             }
@@ -153,35 +157,49 @@ class Server extends Swoole\Protocol\WebSocket
         //类型判断:1->直播员消息 2->观众评论
         if($msg['type']==1)
         {
-            $auth=array(
-                "type"=>1,
-                "directorid"=>$msg['directorid'],
-                "matchid"=>$msg['matchid'],
-                "authtime"=>$msg['authtime']
-            );
-            $resmsg=array(
-                "code"=>1,
-                "status"=>"success"
-            );
-            $this->Directors[$client_id]=$auth;
-            //还需要保存直播员信息到allusers以便能接收消息
-            $this->allUsers[$client_id]=$auth;
-            $this->sendJson($client_id,$resmsg);
+            //防止一个socket连接中重复授权
+            if( !array_key_exists($client_id,$this->Directors) && !$this->allUsers[$client_id])
+            {
+                $auth=array(
+                    "type"=>1,
+                    "directorid"=>$msg['directorid'],
+                    "matchid"=>$msg['matchid'],
+                    "authtime"=>$msg['authtime']
+                );
+                $resmsg=array(
+                    "code"=>1,
+                    "status"=>"success"
+                );
+                $this->Directors[$client_id] = $auth;
+                //还需要保存直播员信息到allusers以便能接收消息
+                $this->allUsers[$client_id] = $auth;
+                $this->sendJson($client_id, $resmsg);
+            }
+            else
+            {
+                $this->sendErrorMessage($client_id,"repeat auth",105);
+            }
         }
         elseif($msg['type']==2)
         {
-            $auth=array(
-                "type"=>2,
-                "uid"=>$msg['userid'],
-                "matchid"=>$msg['matchid'],
-                "authtime"=>$msg['authtime']
-            );
-            $resmsg=array(
-                "code"=>1,
-                "status"=>"success"
-            );
-            $this->loginUsers[$client_id]=$auth;
-            $this->sendJson($client_id,$resmsg);
+            if(!array_key_exists($client_id,$this->loginUsers[$client_id])){
+                $auth=array(
+                    "type"=>2,
+                    "uid"=>$msg['userid'],
+                    "matchid"=>$msg['matchid'],
+                    "authtime"=>$msg['authtime']
+                );
+                $resmsg=array(
+                    "code"=>1,
+                    "status"=>"success"
+                );
+                $this->loginUsers[$client_id]=$auth;
+                $this->sendJson($client_id,$resmsg);
+            }
+            else
+            {
+                $this->sendErrorMessage($client_id,"repeat auth",105);
+            }
         }
         else
         {
@@ -196,19 +214,19 @@ class Server extends Swoole\Protocol\WebSocket
      * */
     function cmd_Login($client_id,$msg)
     {
-        $loginsuccess=array(
-            "uid"=>$msg['userid'],
-            "matchid"=>$msg['matchid'],
-            "logintime"=>$msg['logintime']
-        );
-        $resok=array(
-            "code"=>1,
-            "msg"=>"login ok!"
-        );
         //保存会话信息
-        //规则client_id@matchid
+        //防止重复login请求
         if(!array_key_exists($client_id,$this->allUsers))
         {
+            $loginsuccess=array(
+                "uid"=>$msg['userid'],
+                "matchid"=>$msg['matchid'],
+                "logintime"=>$msg['logintime']
+            );
+            $resok=array(
+                "code"=>1,
+                "msg"=>"login ok!"
+            );
             $this->allUsers[$client_id] = $loginsuccess;
             //返回登录成功信息
             $this->sendJson($client_id, $resok);
@@ -220,9 +238,24 @@ class Server extends Swoole\Protocol\WebSocket
     }
     /*
      * 获得当前比赛的在线人数
+     * 返回消息类型
+     * {"cmd":"GetNumbers","numbers":"111","sendtime":"xxxxx"}
      * */
     function cmd_GetNumbers($client_id,$msg)
     {
-
+        $numbers =0;
+        foreach($this->allUsers as $client =>$k)
+        {
+            if($this->allUsers[$client]['matchid'] == $msg['matchid'])
+            {
+                $numbers++;
+            }
+        }
+        $resmsg=array(
+            "cmd"=>$msg['cmd'],
+            "numbers"=>$numbers,
+            "sendtime"=>$msg['sendtime']
+        );
+        $this->sendJson($client_id,$resmsg);
     }
 }
