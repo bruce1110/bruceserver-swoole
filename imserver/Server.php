@@ -224,7 +224,7 @@ class Server extends Swoole\Protocol\WebSocket
      * */
     function cmd_GetNumbers($client_id, $msg)
     {
-        if (array_key_exists($client_id, $this->allUsers)) {
+        if (array_key_exists($client_id, $this->allUsers)&&$this->allUsers[$client_id]['matchid']==$msg['matchid']) {
             $numbers = 0;
             foreach ($this->allUsers as $client => $k) {
                 if ($this->allUsers[$client]['matchid'] == $msg['matchid']) {
