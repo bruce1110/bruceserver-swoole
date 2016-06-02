@@ -5,6 +5,7 @@
  * Time: 14:25
  */
 namespace WebIm;
+
 use Swoole;
 
 /*
@@ -14,15 +15,17 @@ use Swoole;
  * 3.需要验证直播员的身份；
  * 4.需要验证发布评论的观众身份信息；
  * */
+
 class Server extends Swoole\Protocol\WebSocket
 {
     /*以后可以考虑将这些信息保存到redis中，以增加服务器的并发数*/
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage','Auth','Login','GetNumbers');
+    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers');
 
     const MESSAGE_MAX_LEN = 1024; //单条消息不得超过1K
+
     /*
      * 接收到消息时
      * type:1->直播员，2->观众
@@ -43,18 +46,17 @@ class Server extends Swoole\Protocol\WebSocket
     function onMessage($client_id, $message)
     {
         // TODO: Implement onMessage() method.
-        $this->log("onMessage: ".$client_id.' = '.$message['message']);
+        $this->log("onMessage: " . $client_id . ' = ' . $message['message']);
         //$this->send($client_id, 'Server is ok!');
-        $msg = json_decode($message['message'],true);
+        $msg = json_decode($message['message'], true);
         //判断消息是否合法，不合法消息将返回错误信息
-        if(! in_array($msg['cmd'],$this->type)||empty($msg['cmd'])||! method_exists($this,'cmd_'.$msg['cmd']))
-        {
-            $this->sendErrorMessage($client_id,'unrecognized message',101);
+        if (!in_array($msg['cmd'], $this->type) || empty($msg['cmd']) || !method_exists($this, 'cmd_' . $msg['cmd'])) {
+            $this->sendErrorMessage($client_id, 'unrecognized message', 101);
             return;
         }
         //处理消息
-        $func = 'cmd_'.$msg['cmd'];
-        $this->$func($client_id,$msg);
+        $func = 'cmd_' . $msg['cmd'];
+        $this->$func($client_id, $msg);
     }
     /*----------------receivedMessage----------*/
 
@@ -66,82 +68,72 @@ class Server extends Swoole\Protocol\WebSocket
      *评论消息格式：
      * {"code":1,"cmd":"CommetMessage","userid":"userid","name":"uname","type":2,"msg":"msg","sendtime":"sendtime","matchid":"matchid"}
      *  */
-    function cmd_sendMessage($client_id,$msg)
+    function cmd_sendMessage($client_id, $msg)
     {
         //类型判断:1->直播员消息 2->观众评论
-        if($msg['type'] ==1)
-        {
-            if(array_key_exists($client_id,$this->Directors)&&$this->Directors[$client_id]['matchid'] == $msg['matchid'])
-            {
-                $resmsg=array(
-                    "code"=>1,
-                    "cmd"=>$msg['cmd'],
-                    "directorid"=>$msg['directorid'],
-                    "directorname"=>$msg['directorname'],
-                    "sendtime"=>$msg['sendtime'],
-                    "type"=>1,
-                    "msg"=>$msg['msg'],
-                    "matchid"=>$msg['matchid']
+        if ($msg['type'] == 1) {
+            if (array_key_exists($client_id, $this->Directors) && $this->Directors[$client_id]['matchid'] == $msg['matchid']) {
+                $resmsg = array(
+                    "code" => 1,
+                    "cmd" => $msg['cmd'],
+                    "directorid" => $msg['directorid'],
+                    "directorname" => $msg['directorname'],
+                    "sendtime" => $msg['sendtime'],
+                    "type" => 1,
+                    "msg" => $msg['msg'],
+                    "matchid" => $msg['matchid']
                 );
-                $this->broadCast($client_id,$resmsg);
+                $this->broadCast($client_id, $resmsg);
+            } else {
+                $this->sendErrorMessage($client_id, 'no logined', 103);
             }
-            else
-            {
-                $this->sendErrorMessage($client_id,'no logined',103);
-            }
-        }
-        elseif($msg['type']==2)
-        {
-            if(array_key_exists($client_id,$this->loginUsers)&&$this->loginUsers[$client_id]['matchid'] == $msg['matchid'])
-            {
-                $resmsg=array(
-                    "code"=>1,
-                    "cmd"=>$msg['cmd'],
-                    "userid"=>$msg['userid'],
-                    "name"=>$msg['uname'],
-                    "sendtime"=>$msg['sendtime'],
-                    "type"=>2,
-                    "msg"=>$msg['msg'],
-                    "matchid"=>$msg['matchid']
+        } elseif ($msg['type'] == 2) {
+            if (array_key_exists($client_id, $this->loginUsers) && $this->loginUsers[$client_id]['matchid'] == $msg['matchid']) {
+                $resmsg = array(
+                    "code" => 1,
+                    "cmd" => $msg['cmd'],
+                    "userid" => $msg['userid'],
+                    "name" => $msg['uname'],
+                    "sendtime" => $msg['sendtime'],
+                    "type" => 2,
+                    "msg" => $msg['msg'],
+                    "matchid" => $msg['matchid']
                 );
-                $this->broadCast($client_id,$resmsg);
+                $this->broadCast($client_id, $resmsg);
+            } else {
+                $this->sendErrorMessage($client_id, 'no logined', 103);
             }
-            else
-            {
-                $this->sendErrorMessage($client_id,'no logined',103);
-            }
-        }
-        else
-        {
-            $this->sendErrorMessage($client_id,'unrecognized message type',104);
+        } else {
+            $this->sendErrorMessage($client_id, 'unrecognized message type', 104);
         }
     }
+
     /**
      * 发送错误信息
      * message format {"code":101,"cmd":"error","msg":"xxxx"}
-    */
-    function sendErrorMessage($client_id,$msg,$code)
+     */
+    function sendErrorMessage($client_id, $msg, $code)
     {
-        $this->sendJson($client_id,array('code'=>$code,'cmd'=>'error','msg'=>$msg));
+        $this->sendJson($client_id, array('code' => $code, 'cmd' => 'error', 'msg' => $msg));
     }
+
     /*
      * 发送json信息
      * */
-    function sendJson($client_id,$array)
+    function sendJson($client_id, $array)
     {
         if ($this->send($client_id, json_encode($array)) === false) {
             $this->close($client_id);
         }
     }
+
     /*
      * 发送一场比赛的广播信息
      * */
-    function broadCast($session_id,$msg)
+    function broadCast($session_id, $msg)
     {
-        foreach($this->allUsers as $client_id=>$value)
-        {
-            if($client_id != $session_id&&$this->allUsers[$client_id]['matchid'] == $msg['matchid'])
-            {
+        foreach ($this->allUsers as $client_id => $value) {
+            if ($client_id != $session_id && $this->allUsers[$client_id]['matchid'] == $msg['matchid']) {
                 $this->sendJson($client_id, $msg);
             }
         }
@@ -152,110 +144,101 @@ class Server extends Swoole\Protocol\WebSocket
      *
      * 暂时没有实现认证逻辑---2016-06-01
      * */
-    function cmd_Auth($client_id,$msg)
+    function cmd_Auth($client_id, $msg)
     {
         //类型判断:1->直播员消息 2->观众评论
-        if($msg['type']==1)
-        {
+        if ($msg['type'] == 1) {
             //防止一个socket连接中重复授权
-            if( !array_key_exists($client_id,$this->Directors) && !$this->allUsers[$client_id])
-            {
-                $auth=array(
-                    "type"=>1,
-                    "directorid"=>$msg['directorid'],
-                    "matchid"=>$msg['matchid'],
-                    "authtime"=>$msg['authtime']
+            if (!array_key_exists($client_id, $this->Directors) && !$this->allUsers[$client_id]) {
+                $auth = array(
+                    "type" => 1,
+                    "directorid" => $msg['directorid'],
+                    "matchid" => $msg['matchid'],
+                    "authtime" => $msg['authtime']
                 );
-                $resmsg=array(
-                    "code"=>1,
-                    "status"=>"success"
+                $resmsg = array(
+                    "code" => 1,
+                    "status" => "success"
                 );
                 $this->Directors[$client_id] = $auth;
                 //还需要保存直播员信息到allusers以便能接收消息
                 $this->allUsers[$client_id] = $auth;
                 $this->sendJson($client_id, $resmsg);
+            } else {
+                $this->sendErrorMessage($client_id, "repeat auth", 105);
             }
-            else
-            {
-                $this->sendErrorMessage($client_id,"repeat auth",105);
-            }
-        }
-        elseif($msg['type']==2)
-        {
-            if(!array_key_exists($client_id,$this->loginUsers[$client_id])){
-                $auth=array(
-                    "type"=>2,
-                    "uid"=>$msg['userid'],
-                    "matchid"=>$msg['matchid'],
-                    "authtime"=>$msg['authtime']
+        } elseif ($msg['type'] == 2) {
+            if (!array_key_exists($client_id, $this->loginUsers[$client_id])) {
+                $auth = array(
+                    "type" => 2,
+                    "uid" => $msg['userid'],
+                    "matchid" => $msg['matchid'],
+                    "authtime" => $msg['authtime']
                 );
-                $resmsg=array(
-                    "code"=>1,
-                    "status"=>"success"
+                $resmsg = array(
+                    "code" => 1,
+                    "status" => "success"
                 );
-                $this->loginUsers[$client_id]=$auth;
-                $this->sendJson($client_id,$resmsg);
+                $this->loginUsers[$client_id] = $auth;
+                $this->sendJson($client_id, $resmsg);
+            } else {
+                $this->sendErrorMessage($client_id, "repeat auth", 105);
             }
-            else
-            {
-                $this->sendErrorMessage($client_id,"repeat auth",105);
-            }
-        }
-        else
-        {
-            $this->sendErrorMessage($client_id,'nuknown message type',104);
+        } else {
+            $this->sendErrorMessage($client_id, 'nuknown message type', 104);
         }
     }
+
     /*
      * 观众上线
      * 将client_id作为key保存到allusers
      * {"uid":"userid","matchid":"xxx","logintime":"xxxxx"}
      * 并返回登录成功信息
      * */
-    function cmd_Login($client_id,$msg)
+    function cmd_Login($client_id, $msg)
     {
         //保存会话信息
         //防止重复login请求
-        if(!array_key_exists($client_id,$this->allUsers))
-        {
-            $loginsuccess=array(
-                "uid"=>$msg['userid'],
-                "matchid"=>$msg['matchid'],
-                "logintime"=>$msg['logintime']
+        if (!array_key_exists($client_id, $this->allUsers)) {
+            $loginsuccess = array(
+                "uid" => $msg['userid'],
+                "matchid" => $msg['matchid'],
+                "logintime" => $msg['logintime']
             );
-            $resok=array(
-                "code"=>1,
-                "msg"=>"login ok!"
+            $resok = array(
+                "code" => 1,
+                "msg" => "login ok!"
             );
             $this->allUsers[$client_id] = $loginsuccess;
             //返回登录成功信息
             $this->sendJson($client_id, $resok);
-        }
-        else
-        {
-            $this->sendErrorMessage($client_id,"repeat login",102);
+        } else {
+            $this->sendErrorMessage($client_id, "repeat login", 102);
         }
     }
+
     /*
      * 获得当前比赛的在线人数
      * 返回消息类型
      * {"cmd":"GetNumbers","numbers":"111","sendtime":"xxxxx"}
      * */
-    function cmd_GetNumbers($client_id,$msg)
+    function cmd_GetNumbers($client_id, $msg)
     {
-        $numbers =0;
-        foreach($this->allUsers as $client =>$k)
-        {
-            if($this->allUsers[$client]['matchid'] == $msg['matchid'])
-            {
-                $numbers++;
+        if (array_key_exists($client_id, $this->allUsers)) {
+            $numbers = 0;
+            foreach ($this->allUsers as $client => $k) {
+                if ($this->allUsers[$client]['matchid'] == $msg['matchid']) {
+                    $numbers++;
+                }
             }
+            $resmsg = array(
+                "cmd" => $msg['cmd'],
+                "numbers" => $numbers,
+                "sendtime" => $msg['sendtime']
+            );
+            $this->sendJson($client_id, $resmsg);
+        } else {
+            $this->sendErrorMessage($client_id, 'no logined', 103);
         }
-        $resmsg=array(
-            "cmd"=>$msg['cmd'],
-            "numbers"=>$numbers,
-            "sendtime"=>$msg['sendtime']
-        );
-        $this->sendJson($client_id,$resmsg);
     }
 }
