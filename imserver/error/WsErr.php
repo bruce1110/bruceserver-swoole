@@ -7,6 +7,10 @@ namespace WebIm\error;
  */
 class WsErr
 {
+    const E100 = array(
+        "code" => 100,
+        "msg" => "Successful"
+    );
     const E101 = array(
         "code" => 101,
         "msg" => "NnrecogNized Message"
