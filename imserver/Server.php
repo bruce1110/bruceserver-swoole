@@ -22,7 +22,9 @@ class Server extends Swoole\Protocol\WebSocket
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers');
+    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'CloseMatch');
+    protected $store = null;
+    protected $redis = array();
 
     const MESSAGE_MAX_LEN = 1024; //单条消息不得超过1K
 
@@ -43,6 +45,16 @@ class Server extends Swoole\Protocol\WebSocket
      * 获取单场比赛在线人数
      * GetNumbers类型消息{"cmd":"GetNumbers","sendtime":"xxxxx","matchid":"xxxxx"}
      * */
+
+    /*
+     * 生成保存数据的对象
+     * */
+    function __construct(array $config)
+    {
+        $this->store = new \WebIm\store\Storage($this->redis);
+        parent::__construct($config);
+    }
+
     function onMessage($client_id, $message)
     {
         // TODO: Implement onMessage() method.
@@ -104,6 +116,10 @@ class Server extends Swoole\Protocol\WebSocket
                     "msg" => $msg['msg'],
                     "matchid" => $msg['matchid']
                 );
+                //保存消息到redis
+                if ($this->store) {
+                    $this->store->Put($msg['matchid'], json_encode($resmsg));
+                }
                 $this->broadCast($client_id, $resmsg);
             } else {
                 $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
@@ -259,5 +275,13 @@ class Server extends Swoole\Protocol\WebSocket
             $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
             return;
         }
+    }
+
+    /*
+     * 关闭比赛直播
+     * */
+    function cmd_CloseMatch($client_id, $msg)
+    {
+
     }
 }
