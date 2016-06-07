@@ -1,6 +1,8 @@
 <?php
 namespace WebIm\store;
+
 use Swoole;
+
 /**
  * User: Bruce Qin
  * Date: 2016/6/3
@@ -20,10 +22,12 @@ class Storage
         'timeout' => 0.25,
         'pconnect' => false,
     );
+
     function __construct(array $config)
     {
         $this->connect($this->config);
     }
+
     /*
      * 连接redis
      * */
@@ -36,18 +40,40 @@ class Storage
      * 插入一条数据
     * 使用方法rpush('key','value')
      * */
-    function Put($matchid,$msg)
+    function Put($matchid, $msg)
     {
-        $this->redis->rpush($matchid,$msg);
+        if (!$this->redis->rpush($matchid, $msg)) {
+            return;
+        }
     }
 
+    /**
+     *删除一条直播消息
+     */
     function Del()
     {
 
     }
 
-    function GetHistory()
+    /**
+     * 默认获取后100条记录
+     */
+    function GetHistory($matchid, $start = 0, $end = 100)
     {
-
+        if ($start > $end) {
+            $start = 0;
+            $end = 100;
+        }
+        $r = $this->redis->lrange($matchid, $start, $end);
+        if ($r) {
+            $resmsg = array(
+                "length" => count($r),
+                "history" => $r,
+                "matchid" => $matchid
+            );
+            return $resmsg;
+        } else {
+            return NULL;
+        }
     }
 }

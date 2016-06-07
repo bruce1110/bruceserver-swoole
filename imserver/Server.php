@@ -22,7 +22,7 @@ class Server extends Swoole\Protocol\WebSocket
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'CloseMatch');
+    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'GetHistory');
     protected $store = null;
     protected $redis = array();
 
@@ -44,6 +44,10 @@ class Server extends Swoole\Protocol\WebSocket
      *
      * 获取单场比赛在线人数
      * GetNumbers类型消息{"cmd":"GetNumbers","sendtime":"xxxxx","matchid":"xxxxx"}
+     *
+     * 获取历史消息
+     * GetHistory消息类型{"cmd":"GetHistory","sendtime":"xxxxxx","matchid":"xxxxx","startindex":111,"endindex":222}
+     *
      * */
 
     /*
@@ -283,5 +287,21 @@ class Server extends Swoole\Protocol\WebSocket
     function cmd_CloseMatch($client_id, $msg)
     {
 
+    }
+
+    /*
+     * 获取比赛历史消息
+     * */
+    function cmd_GetHistory($client_id, $msg)
+    {
+        if (array_key_exists($client_id, $this->allUsers) && $this->allUsers[$client_id]['matchid'] == $msg['matchid']) {
+            $resmsg = $this->store->GetHistory($msg['matchid'], $msg['startindex'], $msg['endindex']);
+            if ($resmsg) {
+                $this->sendJson($client_id, $resmsg);
+            }
+        } else {
+            $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
+            return;
+        }
     }
 }
