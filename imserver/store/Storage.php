@@ -53,7 +53,7 @@ class Storage
      */
     function Del($matchid, $delmsg)
     {
-        $this->redis->lRem($matchid, $delmsg, -1);
+        
     }
 
     /**

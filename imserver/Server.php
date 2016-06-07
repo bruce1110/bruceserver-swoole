@@ -22,7 +22,7 @@ class Server extends Swoole\Protocol\WebSocket
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'GetHistory', 'DelMessage');
+    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'GetHistory');
     protected $store = null;
     protected $redis = array();
 
@@ -47,9 +47,6 @@ class Server extends Swoole\Protocol\WebSocket
      *
      * 获取历史消息
      * GetHistory消息类型{"cmd":"GetHistory","sendtime":"xxxxxx","matchid":"xxxxx","startindex":111,"endindex":222}
-     *
-     * 删除一条直播消息
-     * DelMessage消息类型{"cmd":"DelMessage","sendtime":"xxxxx","matchid":"xxxxx","msg":"xxxxxx"}
      *
      * */
 
@@ -314,7 +311,7 @@ class Server extends Swoole\Protocol\WebSocket
     /**
      * 删除一条直播消息
      */
-    function cmd_DelMessage($client_id, $msg)
+   /* function cmd_DelMessage($client_id, $msg)
     {
         if (array_key_exists($client_id, $this->Directors) && $this->Directors[$client_id]['matchid'] == $msg['matchid']) {
             //广播客户端消息要被删除
@@ -332,5 +329,5 @@ class Server extends Swoole\Protocol\WebSocket
         } else {
             $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
         }
-    }
+    }*/
 }
