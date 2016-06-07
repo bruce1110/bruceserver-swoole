@@ -321,14 +321,12 @@ class Server extends Swoole\Protocol\WebSocket
             $resmsg = array(
                 "code" => 1,
                 "cmd" => $msg['cmd'],
-                "directorid" => $msg['directorid'],
-                "directorname" => $msg['directorname'],
                 "sendtime" => $msg['sendtime'],
                 "type" => 1,
                 "msg" => $msg['msg'],
                 "matchid" => $msg['matchid']
             );
-            $this->broadCast($client_id, $msg);
+            $this->broadCast($client_id, $resmsg);
             //删除redis数据
             $this->store->Del($msg['matchid'], $msg['msg']);
         } else {
