@@ -22,7 +22,7 @@ class Server extends Swoole\Protocol\WebSocket
     protected $allUsers = array();   //保存所有的在线观众
     protected $loginUsers = array(); //保存已经登录的观众
     protected $Directors = array(); //保存登录的直播员信息
-    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'GetHistory');
+    protected $type = array('sendMessage', 'Auth', 'Login', 'GetNumbers', 'GetHistory', 'DelMessage');
     protected $store = null;
     protected $redis = array();
 
@@ -47,6 +47,9 @@ class Server extends Swoole\Protocol\WebSocket
      *
      * 获取历史消息
      * GetHistory消息类型{"cmd":"GetHistory","sendtime":"xxxxxx","matchid":"xxxxx","startindex":111,"endindex":222}
+     *
+     * 删除一条直播消息
+     * DelMessage消息类型{"cmd":"DelMessage","sendtime":"xxxxx","matchid":"xxxxx","msg":"xxxxxx"}
      *
      * */
 
@@ -242,7 +245,6 @@ class Server extends Swoole\Protocol\WebSocket
         //防止重复login请求
         if (!array_key_exists($client_id, $this->allUsers)) {
             $loginsuccess = array(
-                "uid" => $msg['userid'],
                 "matchid" => $msg['matchid'],
                 "logintime" => $msg['logintime']
             );
@@ -295,13 +297,42 @@ class Server extends Swoole\Protocol\WebSocket
     function cmd_GetHistory($client_id, $msg)
     {
         if (array_key_exists($client_id, $this->allUsers) && $this->allUsers[$client_id]['matchid'] == $msg['matchid']) {
-            $resmsg = $this->store->GetHistory($msg['matchid'], $msg['startindex'], $msg['endindex']);
+            if (isset($msg['startindex']) && isset($msg['endindex'])) {
+                $resmsg = $this->store->GetHistory($msg['matchid'], $msg['startindex'], $msg['endindex']);
+            } else {
+                $resmsg = $this->store->GetHistory($msg['matchid']);
+            }
             if ($resmsg) {
                 $this->sendJson($client_id, $resmsg);
             }
         } else {
             $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
             return;
+        }
+    }
+
+    /**
+     * 删除一条直播消息
+     */
+    function cmd_DelMessage($client_id, $msg)
+    {
+        if (array_key_exists($client_id, $this->Directors) && $this->Directors[$client_id]['matchid'] == $msg['matchid']) {
+            //广播客户端消息要被删除
+            $resmsg = array(
+                "code" => 1,
+                "cmd" => $msg['cmd'],
+                "directorid" => $msg['directorid'],
+                "directorname" => $msg['directorname'],
+                "sendtime" => $msg['sendtime'],
+                "type" => 1,
+                "msg" => $msg['msg'],
+                "matchid" => $msg['matchid']
+            );
+            $this->broadCast($client_id, $msg);
+            //删除redis数据
+            $this->store->Del($msg['matchid'], $msg['msg']);
+        } else {
+            $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
         }
     }
 }

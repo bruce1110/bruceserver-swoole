@@ -49,10 +49,11 @@ class Storage
 
     /**
      *删除一条直播消息
+     * 默认删除最后一条匹配到的消息
      */
-    function Del()
+    function Del($matchid, $delmsg)
     {
-
+        $this->redis->lre($matchid, $delmsg, -1);
     }
 
     /**
