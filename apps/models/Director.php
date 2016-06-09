@@ -8,7 +8,7 @@ use Swoole;
  * Date: 2016/6/9
  * Time: 15:19
  */
-class Director
+class Director extends Swoole\Model
 {
     public $table = 'directors';
 }
