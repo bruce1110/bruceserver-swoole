@@ -8,11 +8,11 @@ use JsonRPC\Server;
  */
 class Imtoken
 {
-    public function __construct()
+    public static function getserver()
     {
         $server = new Server();
         $processorHandle = $server->getProcedureHandler();
-        $processorHandle->withClassAndMethod('token','\App\Token\Director','identify');
+        $processorHandle->withClassAndMethod('token',new \App\Token\Director(),'identify');
         echo $server->execute();
     }
 }
