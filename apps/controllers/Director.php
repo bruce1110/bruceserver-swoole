@@ -14,5 +14,9 @@ class Director extends Swoole\Controller
         $r->get(1);
         var_dump($r);
     }
+    function ImAuth()
+    {
+        $rpm = new \App\RPC\Imtoken();
+    }
 }
 
