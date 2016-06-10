@@ -19,6 +19,10 @@ class Director extends Swoole\Controller
         $rpc = new Swoole\Client\SOA();;
         $rpc->addServers(array('127.0.0.1:9999'));
         $result = $rpc->task('SoaServer\Auth\Director::token');
-        var_dump($result);
+        $n=$rpc->wait(1);
+        if($n==1)
+        {
+            echo "the result is ". $result->data;
+        }
     }
 }
