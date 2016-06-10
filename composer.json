@@ -1,7 +1,6 @@
 {
     "require": {
-        "matyhtf/swoole_framework": "dev-master",
-        "fguillot/json-rpc":">=1.2.0"
+        "matyhtf/swoole_framework": "dev-master"
     },
     "repositories": {
         "packagist": {
