@@ -14,8 +14,8 @@ class Director
     {
         if ($token && $directorid) {
             $direc_model = model('Director');
-            $result = $direc_model->gets('director_id = ' . $directorid)->token;
-            if ($result && $result == $token) {
+            $result = $direc_model->gets('director_id = ' . $directorid);
+            if ($result && $result[0]['token'] == $token) {
                 return true;
             } else {
                 return false;
