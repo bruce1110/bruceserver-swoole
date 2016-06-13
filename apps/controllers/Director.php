@@ -1,6 +1,8 @@
 <?php
 namespace App\Controller;
+
 use Swoole;
+
 /**
  * User: Bruce Qin
  * Date: 2016/6/9
@@ -14,15 +16,14 @@ class Director extends Swoole\Controller
         $r->get(1);
         var_dump($r);
     }
+
     function ImAuth()
     {
-        $rpc = new Swoole\Client\SOA();;
-        $rpc->addServers(array('127.0.0.1:9999'));
-        $result = $rpc->task('SoaServer\Auth\Director::token');
-        $n=$rpc->wait(1);
-        if($n==1)
-        {
-            echo "the result is ". $result->data;
+        $a = $this->rpc;
+        $result = $a->task('SoaServer\Auth\Director::token');
+        $n = $a->wait(1);
+        if ($n == 1) {
+            echo "the result is " . $result->data;
         }
     }
 }
