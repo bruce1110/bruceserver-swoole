@@ -5,7 +5,8 @@
  * Time: 17:47
  */
 define('DEBUG', 'on');
-define("WEBPATH", __DIR__);
+define('WEBPATH', __DIR__);
+define('APPSPATH',__DIR__.'/soa');
 require __DIR__ . '/vendor/autoload.php';
 Swoole\Loader::vendor_init();
 Swoole\Loader::addNameSpace('SoaServer', __DIR__ . '/soa');

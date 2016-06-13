@@ -12,6 +12,8 @@ class Director
 {
     public static function token()
     {
+        global $php;
+        var_dump($php->config['db']['master']);
         return true;
     }
 }
