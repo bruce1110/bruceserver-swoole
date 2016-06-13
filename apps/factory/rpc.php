@@ -6,5 +6,5 @@
  */
 global $php;
 $rpc = new \Swoole\Client\SOA();
-$rpc->addServers($php->config['rpc']);
+$rpc->addServers($php->config['rpc']['server']);
 return $rpc;
