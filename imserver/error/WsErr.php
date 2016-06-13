@@ -28,11 +28,15 @@ class WsErr
         "msg" => "Nuknown Message Type"
     );
     const E105 = array(
-        "code" => 101,
+        "code" => 105,
         "msg" => "Repeat Auth"
     );
     const E106 = array(
-        "code" => 101,
+        "code" => 106,
         "msg" => "the message max length is " . \WebIm\Server::MESSAGE_MAX_LEN
+    );
+    const E107 = array(
+        "code" => 107,
+        "msg" => "Auth  Failed"
     );
 }

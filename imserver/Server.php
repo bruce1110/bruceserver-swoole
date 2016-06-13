@@ -202,10 +202,16 @@ class Server extends Swoole\Protocol\WebSocket
                     "matchid" => $msg['matchid'],
                     "authtime" => $msg['authtime']
                 );
-                $this->Directors[$client_id] = $auth;
-                //还需要保存直播员信息到allusers以便能接收消息
-                $this->allUsers[$client_id] = $auth;
-                $this->sendJson($client_id, \WebIm\error\WsErr::E100);
+                //授权判断
+                if (\WebIm\auth\Director::Auth($msg['token'], $msg['directorid'])) {
+                    $this->Directors[$client_id] = $auth;
+                    //还需要保存直播员信息到allusers以便能接收消息
+                    $this->allUsers[$client_id] = $auth;
+                    $this->sendJson($client_id, \WebIm\error\WsErr::E100);
+                } else {
+                    $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E107);
+                    return;
+                }
             } else {
                 $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E105);
                 return;
@@ -311,23 +317,23 @@ class Server extends Swoole\Protocol\WebSocket
     /**
      * 删除一条直播消息
      */
-   /* function cmd_DelMessage($client_id, $msg)
-    {
-        if (array_key_exists($client_id, $this->Directors) && $this->Directors[$client_id]['matchid'] == $msg['matchid']) {
-            //广播客户端消息要被删除
-            $resmsg = array(
-                "code" => 1,
-                "cmd" => $msg['cmd'],
-                "sendtime" => $msg['sendtime'],
-                "type" => 1,
-                "msg" => $msg['msg'],
-                "matchid" => $msg['matchid']
-            );
-            $this->broadCast($client_id, $resmsg);
-            //删除redis数据
-            $this->store->Del($msg['matchid'], $msg['msg']);
-        } else {
-            $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
-        }
-    }*/
+    /* function cmd_DelMessage($client_id, $msg)
+     {
+         if (array_key_exists($client_id, $this->Directors) && $this->Directors[$client_id]['matchid'] == $msg['matchid']) {
+             //广播客户端消息要被删除
+             $resmsg = array(
+                 "code" => 1,
+                 "cmd" => $msg['cmd'],
+                 "sendtime" => $msg['sendtime'],
+                 "type" => 1,
+                 "msg" => $msg['msg'],
+                 "matchid" => $msg['matchid']
+             );
+             $this->broadCast($client_id, $resmsg);
+             //删除redis数据
+             $this->store->Del($msg['matchid'], $msg['msg']);
+         } else {
+             $this->sendErrorMessage($client_id, \WebIm\error\WsErr::E103);
+         }
+     }*/
 }

@@ -10,10 +10,18 @@ namespace SoaServer\Auth;
  */
 class Director
 {
-    public static function token()
+    public static function token($token, $directorid)
     {
-        global $php;
-        var_dump($php->config['db']['master']);
-        return true;
+        if ($token && $directorid) {
+            $direc_model = model('Director');
+            $result = $direc_model->gets('director_id = ' . $directorid)->token;
+            if ($result && $result == $token) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 }
