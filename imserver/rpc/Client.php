@@ -1,5 +1,5 @@
 <?php
-namespace WebIm\rpc;
+namespace WebIm\Rpc;
 
 use Swoole;
 

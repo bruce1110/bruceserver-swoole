@@ -1,5 +1,5 @@
 <?php
-namespace WebIm\auth;
+namespace WebIm\Auth;
 /**
  * User: Bruce Qin
  * Date: 2016/6/13
@@ -13,7 +13,7 @@ class Director
     public static function Auth($token=null, $directorid=null)
     {
         if (!self::$rpc) {
-            self::$rpc = \WebIm\rpc\Client::connect();
+            self::$rpc = \WebIm\Rpc\Client::connect();
         }
         $result = self::$rpc->task('SoaServer\Auth\Director::token', array($token, $directorid));
         if (self::$rpc->wait(0.5) == 1 && $result->data) {

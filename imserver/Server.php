@@ -203,7 +203,7 @@ class Server extends Swoole\Protocol\WebSocket
                     "authtime" => $msg['authtime']
                 );
                 //授权判断
-                if (\WebIm\auth\Director::Auth($msg['token'], $msg['directorid'])) {
+                if (\WebIm\Auth\Director::Auth($msg['token'], $msg['directorid'])) {
                     $this->Directors[$client_id] = $auth;
                     //还需要保存直播员信息到allusers以便能接收消息
                     $this->allUsers[$client_id] = $auth;
