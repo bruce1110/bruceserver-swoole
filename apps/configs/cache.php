@@ -5,6 +5,6 @@ $cache['session'] = array(
 );
 $cache['master'] = array(
     /*'type' => 'Memcache',*/
-    'type' => 'FileCache',
+    'type' => 'Redis',
 );
 return $cache;
