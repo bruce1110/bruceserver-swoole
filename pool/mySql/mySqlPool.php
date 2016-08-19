@@ -18,6 +18,7 @@ class mySqlPool
     public function __construct($size)
     {
         $this->POOL_SIZE = $size;
+        $this->create(self::$pool);
     }
 
     private function getPoolInstance()
@@ -27,8 +28,12 @@ class mySqlPool
 
     private function create(Pool $pool)
     {
+        if (self::$pool == null) {
+            //初始化连接池
+            $this->getPoolInstance();
+        }
         $pool->create(function () use ($pool) {
-            $db = new swoole_mysql;
+            $db = new \swoole_mysql;
             $server = array(
                 'host' => '10.1.20.84',
                 'user' => 'bruce',
@@ -44,8 +49,9 @@ class mySqlPool
         });
     }
 
-    private function execSql($sql, Pool $pool, &$result = array())
+    private function execSql($sql,&$result = array())
     {
+        $pool = self::$pool;
         $pool->request(function ($db) use ($pool, $sql, $result) {
             $r = $db->query($sql, function (swoole_mysql $db, $r) use ($pool, $result) {
                 if (empty($r) == false) {
@@ -62,17 +68,6 @@ class mySqlPool
 
     public function query($sql, $transaction = false)
     {
-        if (self::$pool == null) {
-            //初始化连接池
-            $this->getPoolInstance();
-            //传入连接池的创建实例方法
-            $this->create(self::$pool);
-        }
-        //执行查询
-        if ($transaction) {
-            $result = array();
-            $this->execSql($sql, self::$pool, $result);
-            return $result;
-        }
+        $this->execSql($sql);
     }
 }
