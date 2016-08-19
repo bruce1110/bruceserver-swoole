@@ -11,7 +11,7 @@ require __DIR__ . '/mySql/myPool.php';
  */
 $db = new swoole_mysql;
 $server = array(
-    'host' => '10.2.2.105',
+    'host' => '10.1.20.84',
     'user' => 'bruce',
     'password' => '12345',
     'database' => 'soap',
