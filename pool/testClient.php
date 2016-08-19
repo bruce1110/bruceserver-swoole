@@ -1,5 +1,7 @@
 <?php
 use Pool\mySql\myPool;
+
+require __DIR__ . '/../vendor/autoload.php';
 /**
  * Created by PhpStorm.
  * User: qinchong
@@ -8,10 +10,10 @@ use Pool\mySql\myPool;
  */
 
 $config = array(
-    'host'=>'10.2.2.105',
-    'database'=>'soap',
-    'user'=>'bruce',
-    'password'=>'123456'
-    );
+    'host' => '10.2.2.105',
+    'database' => 'soap',
+    'user' => 'bruce',
+    'password' => '123456'
+);
 $pool = new myPool($config);
 var_dump($pool);
