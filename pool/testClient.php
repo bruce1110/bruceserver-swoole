@@ -1,5 +1,5 @@
 <?php
-
+require __DIR__ . '/mySql/myPool.php';
 $pool = new Pool\mySql\Pool(10);
 
 $pool->create(function () use ($pool) {
@@ -18,7 +18,7 @@ $pool->create(function () use ($pool) {
     });
 });
 
-for ($i = 0; $i < 10; $i++) {
+for ($i = 0; $i < 20; $i++) {
     $pool->request(function ($db) use ($pool) {
         $r = $db->query("show tables", function (swoole_mysql $db, $r) use ($pool) {
             global $s;

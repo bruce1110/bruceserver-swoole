@@ -16,19 +16,21 @@ class Pool
     protected $resourceNum;
 
     /**
-     * idle connection
+     * 全局资源池
      * @var array $resourcePool
      */
     protected $resourcePool = array();
 
     /**
      * @var \SplQueue
+     * 可以使用的数据库连接池
      */
     protected $idlePool;
 
 
     /**
      * @var \SplQueue
+     * 待完成的任务池
      */
     protected $taskQueue;
 
@@ -41,7 +43,9 @@ class Pool
     public function __construct($poolSize = 100)
     {
         $this->poolSize = $poolSize;
+        //保存回调函数
         $this->taskQueue = new \SplQueue();
+        //保存可用的数据库连接
         $this->idlePool = new \SplQueue();
     }
 
@@ -51,8 +55,9 @@ class Pool
      */
     function join($resource)
     {
-        //保存到空闲连接池中
+        //先保存到全局资源池
         $this->resourcePool[spl_object_hash($resource)] = $resource;
+        //保存到空闲连接池
         $this->release($resource);
     }
 
@@ -105,7 +110,7 @@ class Pool
         //入队列
         $this->taskQueue->enqueue($callback);
         //没有可用的资源, 创建新的连接
-        if (count($this->resourcePool) < $this->poolSize and $this->resourceNum < $this->poolSize) {
+        if (count($this->resourcePool) < $this->poolSize && $this->resourceNum < $this->poolSize) {
             $r = call_user_func($this->createFunction);
             if ($r) {
                 $this->resourceNum++;
@@ -122,8 +127,9 @@ class Pool
      */
     public function release($resource)
     {
+        //加入空闲连接池
         $this->idlePool->enqueue($resource);
-        //有任务要做
+        //判断任务池是否有任务
         if (count($this->taskQueue) > 0) {
             $this->doTask();
         }
@@ -131,8 +137,11 @@ class Pool
 
     protected function doTask()
     {
+        //获得数据库连接
         $resource = $this->idlePool->dequeue();
+        //获得一个任务
         $callback = $this->taskQueue->dequeue();
+        //执行回调任务传入参数为数据库连接
         call_user_func($callback, $resource);
     }
 }
