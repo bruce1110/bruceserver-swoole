@@ -33,7 +33,10 @@ class Pool
      * 待完成的任务池
      */
     protected $taskQueue;
-
+    /**
+     * 保存创建数据库连接方法
+     * @var $createFunction
+     */
     protected $createFunction;
 
     /**
@@ -107,7 +110,7 @@ class Pool
      */
     public function request(callable $callback)
     {
-        //入队列
+        //把任务放入任务队列
         $this->taskQueue->enqueue($callback);
         //没有可用的资源, 创建新的连接
         if (count($this->resourcePool) < $this->poolSize && $this->resourceNum < $this->poolSize) {
@@ -135,6 +138,9 @@ class Pool
         }
     }
 
+    /**
+     *执行一个任务
+     */
     protected function doTask()
     {
         //获得数据库连接
